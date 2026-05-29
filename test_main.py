@@ -6,7 +6,7 @@ client = TestClient(app)
 def test_read_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "message": "API is running"}
+    assert response.json() == {"status": "healthy", "message": "API is running perfectly!"}
 
 def test_read_item():
     response = client.get("/query/42")
