@@ -4,7 +4,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"status": "healthy", "message": "API is running"}
+    return {"status": "healthy", "message": "API is running perfectly!"}
 
 @app.get("/query/{item_id}")
 def read_item(item_id: int):
