@@ -2,54 +2,71 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
+
+variables:
+  pythonVersion: '3.11'
 
 stages:
+
 - stage: BuildAndTest
-  displayName: 'Run Unit Tests'
+  displayName: Build and Test
+
   jobs:
-  - job: Test
+  - job: TestJob
     steps:
+
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.10'
-      displayName: 'Use Python 3.10'
+        versionSpec: '$(pythonVersion)'
 
     - script: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      displayName: 'Install dependencies'
+      displayName: Install Dependencies
 
     - script: |
-        pytest test_main.py
-      displayName: 'Run Pytest'
+        pytest
+      displayName: Run Unit Tests
 
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
-        replaceExistingArchive: true
+- stage: DeployDev
+  displayName: Deploy to Development
 
-    - publish: $(Build.ArtifactStagingDirectory)/app.zip
-      artifact: drop
-
-- stage: Deploy
-  displayName: 'Deploy to Azure'
   dependsOn: BuildAndTest
-  condition: succeeded()
+
   jobs:
-  - deployment: DeployWebApp
-    environment: 'Production'
+  - deployment: DeployDev
+    environment: dev
+
     strategy:
       runOnce:
         deploy:
           steps:
+
           - task: AzureWebApp@1
             inputs:
-              azureSubscription: 'Azure-Connection'
+              azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
-              appName: 'fastapi-backend-azure'
-              package: '$(Pipeline.Workspace)/drop/app.zip'
-              startUpCommand: 'uvicorn main:app --host 0.0.0.0 --port 8000'
+              appName: 'azure-devops-app'
+              package: '$(System.DefaultWorkingDirectory)'
+
+- stage: DeployProduction
+  displayName: Deploy to Production
+
+  dependsOn: DeployDev
+
+  jobs:
+  - deployment: DeployProd
+    environment: production
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'azure-service-connection'
+              appType: 'webAppLinux'
+              appName: 'azure-devops-app'
+              package: '$(System.DefaultWorkingDirectory)'
