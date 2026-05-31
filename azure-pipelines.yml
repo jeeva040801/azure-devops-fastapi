@@ -9,11 +9,16 @@ variables:
 
 stages:
 
+# =========================
+# BUILD + TRAIN + TEST
+# =========================
 - stage: BuildAndTest
-  displayName: Build and Test
+  displayName: Build, Train and Test
 
   jobs:
-  - job: TestJob
+  - job: BuildJob
+    displayName: Build ML Application
+
     steps:
 
     - task: UsePythonVersion@0
@@ -23,10 +28,22 @@ stages:
     - script: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+      displayName: Install Dependencies
+
+    - script: |
+        python train.py
+      displayName: Train Linear Regression Model
+
+    - script: |
+        ls -la
+      displayName: Verify model.pkl exists
+
+    - script: |
         pytest
-      displayName: Install Dependencies and Run Tests
+      displayName: Run Unit Tests
 
     - task: ArchiveFiles@2
+      displayName: Create Deployment Package
       inputs:
         rootFolderOrFile: '$(Build.SourcesDirectory)'
         includeRootFolder: false
@@ -34,10 +51,17 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
         replaceExistingArchive: true
 
-    - publish: '$(Build.ArtifactStagingDirectory)/app.zip'
-      artifact: drop
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifact
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
+        ArtifactName: 'drop'
 
+# =========================
+# DEPLOY TO DEV
+# =========================
 - stage: DeployDev
+  displayName: Deploy to Development
   dependsOn: BuildAndTest
 
   jobs:
@@ -53,13 +77,18 @@ stages:
             artifact: drop
 
           - task: AzureWebApp@1
+            displayName: Deploy to Dev App Service
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
               appName: 'fastapi-devops-app'
               package: '$(Pipeline.Workspace)/drop/app.zip'
 
+# =========================
+# DEPLOY TO PROD
+# =========================
 - stage: DeployProduction
+  displayName: Deploy to Production
   dependsOn: DeployDev
 
   jobs:
@@ -75,6 +104,7 @@ stages:
             artifact: drop
 
           - task: AzureWebApp@1
+            displayName: Deploy to Production App Service
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
