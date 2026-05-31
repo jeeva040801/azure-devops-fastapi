@@ -47,7 +47,7 @@ stages:
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
-              appName: 'azure-devops-app'
+              appName: 'fastapi-devops-app'
               package: '$(System.DefaultWorkingDirectory)'
 
 - stage: DeployProduction
@@ -68,5 +68,5 @@ stages:
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
-              appName: 'azure-devops-app'
+              appName: 'fastapi-devops-app'
               package: '$(System.DefaultWorkingDirectory)'
