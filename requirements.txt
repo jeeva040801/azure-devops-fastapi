@@ -3,3 +3,7 @@ uvicorn
 gunicorn
 pytest
 httpx
+scikit-learn
+pandas
+joblib
+pydantic
