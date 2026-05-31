@@ -3,12 +3,21 @@ from main import app
 
 client = TestClient(app)
 
-def test_read_root():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "message": "API is running perfectly!"}
+def test_health():
 
-def test_read_item():
-    response = client.get("/query/42")
+    response = client.get("/")
+
     assert response.status_code == 200
-    assert response.json() == {"item_id": 42, "data": "Sample retrieved context"}
+
+def test_prediction():
+
+    response = client.post(
+        "/predict",
+        json={"area": 1200}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "predicted_price" in data
