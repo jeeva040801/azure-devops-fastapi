@@ -1,11 +1,24 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+import joblib
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"status": "healthy", "message": "API is running perfectly!"}
+model = joblib.load("model.pkl")
 
-@app.get("/query/{item_id}")
-def read_item(item_id: int):
-    return {"item_id": item_id, "data": "Sample retrieved context"}
+class House(BaseModel):
+    area: int
+
+@app.get("/")
+def health():
+    return {"status": "healthy"}
+
+@app.post("/predict")
+def predict(data: House):
+
+    prediction = model.predict([[data.area]])[0]
+
+    return {
+        "area": data.area,
+        "predicted_price": round(prediction)
+    }
