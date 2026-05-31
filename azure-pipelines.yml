@@ -23,15 +23,21 @@ stages:
     - script: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      displayName: Install Dependencies
-
-    - script: |
         pytest
-      displayName: Run Unit Tests
+      displayName: Install Dependencies and Run Tests
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+        replaceExistingArchive: true
+
+    - publish: '$(Build.ArtifactStagingDirectory)/app.zip'
+      artifact: drop
 
 - stage: DeployDev
-  displayName: Deploy to Development
-
   dependsOn: BuildAndTest
 
   jobs:
@@ -43,16 +49,17 @@ stages:
         deploy:
           steps:
 
+          - download: current
+            artifact: drop
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
               appName: 'fastapi-devops-app'
-              package: '$(System.DefaultWorkingDirectory)'
+              package: '$(Pipeline.Workspace)/drop/app.zip'
 
 - stage: DeployProduction
-  displayName: Deploy to Production
-
   dependsOn: DeployDev
 
   jobs:
@@ -64,9 +71,12 @@ stages:
         deploy:
           steps:
 
+          - download: current
+            artifact: drop
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'azure-service-connection'
               appType: 'webAppLinux'
               appName: 'fastapi-devops-app'
-              package: '$(System.DefaultWorkingDirectory)'
+              package: '$(Pipeline.Workspace)/drop/app.zip'
